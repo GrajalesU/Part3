@@ -1,8 +1,23 @@
 const express = require("express");
 const crypto = require("crypto");
+const morgan = require("morgan");
 const app = express();
 
 app.use(express.json());
+
+morgan.token("content", (req, res) => {
+  const body = req.body;
+  if (Object.keys(body).length == 0) {
+    return null;
+  }
+  return JSON.stringify(body);
+});
+
+app.use(
+  morgan(
+    ":method :url :status :res[content-length] :response-time ms :content"
+  )
+);
 
 let persons = [
   {
