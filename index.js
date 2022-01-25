@@ -1,7 +1,9 @@
+require("dotenv").config();
 const express = require("express");
-const crypto = require("crypto");
 const morgan = require("morgan");
 const cors = require("cors");
+const Person = require("./person");
+
 const app = express();
 
 morgan.token("content", (req, res) => {
@@ -12,55 +14,43 @@ morgan.token("content", (req, res) => {
   return JSON.stringify(body);
 });
 
+const errorHandler = (error, req, res, next) => {
+  console.log(error.message);
+
+  if (error.name === "CastError")
+    return res.status(400).send({ error: "malformatted id" });
+
+  next(error);
+};
+
 app.use(express.json());
 app.use(cors());
 app.use(
   morgan(":method :url :status :res[content-length] :response-time ms :content")
 );
 app.use(express.static("build"));
-
-let persons = [
-  {
-    id: "53d35cc7-6c08-4a25-b1fe-c31d0f12a3eb",
-    name: "Carlo",
-    number: 300,
-  },
-  {
-    id: "23d41a24-caa2-4f7c-b8d6-ac403b1af229",
-    name: "Farina",
-    number: 9,
-  },
-  {
-    id: "13692072-71ac-414d-9453-ca37d05664db",
-    name: "Me",
-    number: 1,
-  },
-];
+app.use(errorHandler);
 
 app.get("/api/persons", (req, res) => {
-  res.json(persons);
+  Person.find({}).then((persons) => {
+    res.json(persons);
+  });
 });
 
-app.get("/info", (req, res) => {
-  res.send(`
-    <p> Phonebook has info for ${persons.length} people </p>
-
-    <p> ${Date()} </p>
-    `);
+app.get("/api/persons/:id", (req, res, next) => {
+  Person.findById(req.params.id)
+    .then((person) => {
+      res.json(person);
+    })
+    .catch((error) => next(error));
 });
 
-app.get("/api/persons/:id", (req, res) => {
-  const id = req.params.id;
-  const person = persons.find((person) => person.id === id);
-  if (person) res.json(person);
-  res.status(404).end();
-});
-
-app.delete("/api/persons/:id", (req, res) => {
-  const id = req.params.id;
-  persons = persons.filter((person) => person.id !== id);
-
-  res.status(204).end();
+app.delete("/api/persons/:id", (req, res, next) => {
+  Person.findByIdAndDelete(req.params.id)
+    .then((result) => {
+      res.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
 app.post("/api/persons", (req, res) => {
@@ -71,22 +61,31 @@ app.post("/api/persons", (req, res) => {
       error: "content missing",
     });
 
-  if (persons.some(({ name }) => name === body.name))
-    return res.status(404).json({
-      error: "name must be unique",
-    });
-  if (persons.some(({ number }) => number === body.number))
-    return res.status(404).json({
-      error: "number must be unique",
-    });
+  const person = new Person({
+    name: body.name,
+    number: body.number,
+  });
 
-  const person = body;
-  person["id"] = crypto.randomUUID();
-  persons = persons.concat(person);
-  res.json(person);
+  person.save().then((savedPerson) => {
+    res.json(savedPerson);
+  });
 });
 
-const PORT = process.env.PORT || 3001;
+app.put("/api/persons/:id", (req, res, next) => {
+  const body = req.body;
+
+  const person = {
+    name: body.content,
+    number: body.number,
+  };
+
+  Person.findByIdAndUpdate(req.params.id, person, { new: true })
+    .then((updatedNote) => {
+      res.json(updatedNote);
+    })
+    .catch((error) => next(error));
+});
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
@@ -95,3 +94,4 @@ app.listen(PORT, () => {
 //3.7-3.8 took 30 minutes
 //3.9-3.11 took 30 minutes
 //3.12 took 30 minutes
+//3.13-3.18 took 2 hours
