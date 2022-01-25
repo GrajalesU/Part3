@@ -93,3 +93,5 @@ app.listen(PORT, () => {
 
 //3.1-3.6 took 1 hour
 //3.7-3.8 took 30 minutes
+//3.9-3.11 took 30 minutes
+//3.12 took 30 minutes
