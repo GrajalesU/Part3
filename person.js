@@ -8,7 +8,7 @@ console.log(`Connecting to ${uri}`);
 
 mongoose
   .connect(uri)
-  .then((_) => {
+  .then(() => {
     console.log("connected to MongoDB");
   })
   .catch((error) => {
@@ -27,7 +27,7 @@ const personSchema = new mongoose.Schema({
 personSchema.plugin(uniqueValidator);
 
 personSchema.set("toJSON", {
-  transform: (document, returnedObject) => {
+  transform: (_document, returnedObject) => {
     returnedObject.id = returnedObject._id.toString();
     delete returnedObject._id;
     delete returnedObject.__v;

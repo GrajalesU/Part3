@@ -6,9 +6,9 @@ const Person = require("./person");
 
 const app = express();
 
-morgan.token("content", (req, res) => {
+morgan.token("content", (req) => {
   const body = req.body;
-  if (Object.keys(body).length == 0) {
+  if (Object.keys(body).length === 0) {
     return null;
   }
   return JSON.stringify(body);
@@ -45,7 +45,7 @@ app.get("/api/persons/:id", (req, res, next) => {
 
 app.delete("/api/persons/:id", (req, res, next) => {
   Person.findByIdAndDelete(req.params.id)
-    .then((result) => {
+    .then(() => {
       res.status(204).end();
     })
     .catch((error) => next(error));
@@ -105,3 +105,4 @@ app.listen(PORT, () => {
 //3.12 took 30 minutes
 //3.13-3.18 took 2 hours
 //3.19-3.21 took 1 hour and a half
+//3.22 took 30 minutes
