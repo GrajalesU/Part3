@@ -15,21 +15,19 @@ morgan.token("content", (req, res) => {
 });
 
 const errorHandler = (error, req, res, next) => {
-  console.log(error.message);
-
   if (error.name === "CastError")
     return res.status(400).send({ error: "malformatted id" });
-
+  if (error.name === "ValidationError")
+    return res.status(400).json({ error: error.message });
   next(error);
 };
 
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 app.use(
   morgan(":method :url :status :res[content-length] :response-time ms :content")
 );
 app.use(express.static("build"));
-app.use(errorHandler);
 
 app.get("/api/persons", (req, res) => {
   Person.find({}).then((persons) => {
@@ -53,7 +51,7 @@ app.delete("/api/persons/:id", (req, res, next) => {
     .catch((error) => next(error));
 });
 
-app.post("/api/persons", (req, res) => {
+app.post("/api/persons", (req, res, next) => {
   const body = req.body;
 
   if (!body.name || !body.number)
@@ -66,9 +64,17 @@ app.post("/api/persons", (req, res) => {
     number: body.number,
   });
 
-  person.save().then((savedPerson) => {
-    res.json(savedPerson);
-  });
+  person
+    .save()
+    .then((savedPerson) => {
+      console.log(savedPerson);
+      return savedPerson.toJSON();
+    })
+    .then((savedAndFormattedPerson) => {
+      console.log(savedAndFormattedPerson);
+      res.json(savedAndFormattedPerson);
+    })
+    .catch((error) => next(error));
 });
 
 app.put("/api/persons/:id", (req, res, next) => {
@@ -85,6 +91,9 @@ app.put("/api/persons/:id", (req, res, next) => {
     })
     .catch((error) => next(error));
 });
+
+app.use(errorHandler);
+
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
@@ -95,3 +104,4 @@ app.listen(PORT, () => {
 //3.9-3.11 took 30 minutes
 //3.12 took 30 minutes
 //3.13-3.18 took 2 hours
+//3.19-3.21 took 1 hour and a half
